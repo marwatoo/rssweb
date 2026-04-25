@@ -37,10 +37,22 @@ class NitterFeed:
             item = self._parse_entry(entry)
             items.append(item)
 
+        # Extract profile image from <image><url>
+        profile_image = ""
+        if hasattr(feed, 'feed') and feed.feed.get('image'):
+            url = feed.feed.image.get('url', '')
+            if url:
+                decoded = urllib.parse.unquote(url)
+                if '/profile_images/' in decoded:
+                    profile_image = decoded
+                elif decoded.startswith('https://nitter.net/pic/'):
+                    profile_image = 'https://pbs.twimg.com' + decoded[len('https://nitter.net/pic'):]
+
         return {
             "title": feed.feed.get("title", f"@{self.username}"),
             "link": feed.feed.get("link", f"{self.base_url}/{self.username}"),
-            "items": items
+            "items": items,
+            "profile_image": profile_image,
         }
 
     def _parse_entry(self, entry) -> dict:
@@ -146,3 +158,9 @@ class NitterFeed:
 def fetch_account(username: str, base_url: str = DEFAULT_NITTER_URL) -> dict:
     feed = NitterFeed(username, base_url)
     return feed.fetch()
+
+
+if __name__ == "__main__":
+    import json
+    result = fetch_account("le360fr")
+    print(json.dumps(result, indent=2, default=str))
